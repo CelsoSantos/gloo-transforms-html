@@ -1,0 +1,26 @@
+load("@build_stack_rules_proto//go:go_grpc_library.bzl", "go_grpc_library")
+load("@build_stack_rules_proto//go:go_proto_library.bzl", "go_proto_library")
+
+# -----------------------------------------------------------------------------
+# API protobuf libraries
+# -----------------------------------------------------------------------------
+
+proto_library(
+    name = "api_service_proto_library",
+    srcs = ["service.proto"],
+    visibility = ["//visibility:public"],
+)
+
+go_proto_library(
+    name = "api_proto_library",
+    importpath = "github.com/celsosantos/gloo-transforms-html/api",
+    visibility = ["//visibility:public"],
+    deps = [":api_service_proto_library"],
+)
+
+go_grpc_library(
+    name = "api_grpc_library",
+    importpath = "github.com/celsosantos/gloo-transforms-html/api",
+    visibility = ["//visibility:public"],
+    deps = [":api_service_proto_library"],
+)

@@ -1,0 +1,37 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: transforms-html
+  namespace: gloo-system
+spec:
+  virtualHost:
+    routes:
+      - matcher:
+          methods:
+            - GET
+          prefix: /render/
+        routeAction:
+          single:
+            destinationSpec:
+              grpc:
+                function: Render
+                parameters:
+                  path: /render/{documentId}
+                package: api
+                service: HtmlService
+            upstream:
+              name: default-transforms-html-hvzj8-81
+              namespace: gloo-system
+        routePlugins:
+          headerManipulation:
+            # add headers to all responses
+            # returned by this route
+            responseHeadersToAdd:
+              - header:
+                  key: Content-Type
+                  value: text/html
+          transformations:
+            responseTransformation:
+              transformationTemplate:
+                body:
+                  text: "{{ document }}"

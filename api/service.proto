@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package api;
+
+message HtmlRequest { 
+  string documentId = 1;
+}
+
+message HtmlResponse {
+  string document = 1;
+}
+
+service HtmlService {
+  // Submit a new document, giving its URL
+  rpc Render(HtmlRequest) returns (HtmlResponse) {}
+}

@@ -1,0 +1,105 @@
+# -----------------------------------------------------------------------------
+# BUILD-TIME VARIABLES
+# -----------------------------------------------------------------------------
+
+ARG ARG_PROJECT="transforms"
+ARG ARG_BAZEL_VERSION=0.26.1
+ARG ARG_BAZEL_BUILDS=/var/bazel/builds
+ARG ARG_SANDBOX_LINUX=ubuntu:18.04
+
+
+# -----------------------------------------------------------------------------
+# BASE STAGE
+#
+# Base stage provides the operating platform for the sandbox Docker image.
+# -----------------------------------------------------------------------------
+
+FROM ${ARG_SANDBOX_LINUX} as base
+
+
+# -----------------------------------------------------------------------------
+# SANDBOX STAGE
+#
+# The sanbox image provides the requisite Golang tooling, including Bazel.
+# The sandbox image and container is built using the following command:
+#
+#   $ make setup
+#
+# The sandbox container can then be launched and a console attached to it using
+# the following command:
+# 
+#   $ make work
+#
+# The sandbox container is called 'transforms-sandbox'. It mounts the current
+# project's folder on '/workspace' volume inside the container.
+# -----------------------------------------------------------------------------
+
+FROM base as sandbox
+
+  ARG ARG_BAZEL_VERSION
+  ARG ARG_BAZEL_BUILDS
+
+  # Environment variables 
+  ENV BAZEL_BUILDS ${ARG_BAZEL_BUILDS}
+  ENV BAZEL_VERSION ${ARG_BAZEL_VERSION}
+
+  # Install basic packages
+  RUN apt-get update \
+   && apt-get -y install \
+      curl \
+      git \
+      golang \
+      graphviz \
+      iputils-ping \
+      net-tools \
+      python \
+      unzip
+
+  # Install Bazel
+  RUN apt-get install -y --no-install-recommends \
+      bash-completion \
+      g++ \
+      zlib1g-dev \
+   && curl -LO "https://github.com/bazelbuild/bazel/releases/download/${ARG_BAZEL_VERSION}/bazel_${ARG_BAZEL_VERSION}-linux-x86_64.deb" \
+   && dpkg -i bazel_*.deb \
+   && rm -rf bazel_*.deb
+
+  # Install default Bazel settings
+  COPY bazelrc.sandbox /etc/bazel/bazel.bazel.rc
+
+  # Folder on which project source code is mounted (from the host machine)
+  VOLUME ${BAZEL_BUILDS}
+
+  # Change to project source code folder when entering the container
+  WORKDIR /workspace
+
+  # Default command executed when the sandbox is executed (make build outputs available in the output folder in your host machine)
+  CMD ["bazel", "--output_user_root=${BAZEL_BUILDS}" ]
+
+
+# -----------------------------------------------------------------------------
+# DEBUG STAGE
+# -----------------------------------------------------------------------------
+
+FROM golang:1.10-alpine
+COPY root /
+ENV GOPATH /go
+ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+RUN apk add --no-cache ca-certificates \
+        dpkg \
+        gcc \
+        git \
+        musl-dev \
+    && mkdir -p "$GOPATH/src" "$GOPATH/bin" \
+    && chmod -R 777 "$GOPATH" \
+    && chmod +x /entrypoint.sh \
+    && go get github.com/derekparker/delve/cmd/dlv
+WORKDIR $GOPATH
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["dlv", "debug", "--headless", "--listen=:2345", "--api-version=2"]
+
+# -----------------------------------------------------------------------------
+# DEFAULT STAGE
+# -----------------------------------------------------------------------------
+
+FROM sandbox

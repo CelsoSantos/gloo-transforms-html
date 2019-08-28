@@ -1,0 +1,48 @@
+# -----------------------------------------------------------------------------
+# Basic settings
+# -----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
+# General project setttings
+# -----------------------------------------------------------------------------
+
+PROJECT_NAME := transforms-demo
+PROJECT_VERSION := 0.1.0
+
+# -----------------------------------------------------------------------------
+# Development sandbox setttings
+# -----------------------------------------------------------------------------
+
+# Development sandbox Docker image and container names
+SANDBOX_IMAGE_NAME := $(PROJECT_NAME)-sandbox
+SANDBOX_CONTAINER_NAME := $(PROJECT_NAME)-sandbox
+
+# Development sandbox Linux distro
+#SANDBOX_LINUX := l.gcr.io/google/bazel:$(BAZEL_VERSION)
+SANDBOX_LINUX := ubuntu:18.04
+
+# Production container(s) Linux distro
+PRODUCTION_LINUX := alpine:3.9
+
+# Linux distro used to debug Golang applications
+DEBUG_LINUX := golang:1.12.6-alpine3.9
+
+# Folder that will cache Bazel results to share across builds (in ephemereal sandbox container) 
+BAZEL_BUILDS := "/var/bazel/builds"
+
+# Bazel building tool version
+BAZEL_VERSION := 0.26.1
+
+# Go language version
+GOLANG_VERSION := 1.12.4
+
+# -----------------------------------------------------------------------------
+# Docker settings
+# -----------------------------------------------------------------------------
+
+# Docker registry image name (used to run a private registry)
+DOCKER_REGISTRY_IMAGE_NAME := registry:latest
+
+# Docker registry container port
+DOCKER_REGISTRY_PORT := 5000

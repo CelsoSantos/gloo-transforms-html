@@ -1,0 +1,93 @@
+load("@bazel_gazelle//:def.bzl", "gazelle")
+
+# -----------------------------------------------------------------------------
+# Function application and library
+# -----------------------------------------------------------------------------
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
+
+gazelle(name = "gazelle")
+
+# Build function executable
+go_binary(
+    name = "render_function",
+    embed = [":go_default_library"],
+    pure = "off",
+    visibility = ["//visibility:public"],
+)
+
+# Build function’s library
+go_library(
+    name = "go_default_library",
+    srcs = ["src/main.go"],
+    importpath = "com.github/celsosantos/gloo-transforms-html",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//api:api_grpc_library",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//reflection:go_default_library",
+        "@org_golang_x_net//context:go_default_library",
+    ],
+)
+
+pkg_tar(
+    name = "templates_tar",
+    srcs = glob(["templates/**"]),
+    mode = "0o644",
+    package_dir = "/var/templates",
+    visibility = ["//visibility:public"],
+)
+
+# -----------------------------------------------------------------------------
+# Function containerization
+# -----------------------------------------------------------------------------
+
+# Generate distroless Docker image for Function
+go_image(
+    name = "render_image_base",
+    binary = ":render_function",
+)
+
+# Wrap distroless Docker image into another image to expose ports to the underlying go_image
+container_image(
+    name = "render_image_build",
+    base = ":render_image_base",
+    ports = ["8080"],
+    tars = ["//:templates_tar"],
+)
+
+# Push application Docker image to the enterprise Docker hub
+#
+# Pushing the image to the Docker Hub is now as simple as:
+#
+# $ bazel run //:render_image_push --incompatible_disable_deprecated_attr_params=false --incompatible_disallow_dict_plus=false
+#
+# This command is executed in the CI/CD pipeline.
+container_push(
+    name = "render_image_push",
+    format = "Docker",
+    image = ":render_image_build",
+    registry = "index.docker.io",
+    repository = "celsosantos/gloo-transforms-html",
+    tag = "latest",
+)
+
+# -----------------------------------------------------------------------------
+# Group definitions
+# -----------------------------------------------------------------------------
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)

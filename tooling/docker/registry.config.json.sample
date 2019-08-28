@@ -1,0 +1,7 @@
+{
+  "auths": {
+    "index.docker.io": {
+			"auth": "dXNlcm5hbWU6cGFzc3dvcmQ=" // base64 encoded [username]:[password] or just docker login
+		}
+  }
+}
