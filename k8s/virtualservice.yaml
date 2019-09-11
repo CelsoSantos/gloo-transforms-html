@@ -3,6 +3,8 @@ kind: VirtualService
 metadata:
   name: transforms-html
   namespace: gloo-system
+  labels:
+    serving.knative.dev/visibility: cluster-local
 spec:
   virtualHost:
     routes:
@@ -20,7 +22,7 @@ spec:
                 package: api
                 service: HtmlService
             upstream:
-              name: default-transforms-html-hvzj8-81
+              name: CHANGEME
               namespace: gloo-system
         routePlugins:
           headerManipulation:
@@ -35,3 +37,4 @@ spec:
               transformationTemplate:
                 body:
                   text: "{{ document }}"
+                  # text: "<head><title>Test</title></head><body><div><p>Hello {{ document }}</p> </div> </body>"
